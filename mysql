@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Colores para los mensajes de texto
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No color
+
+# Pedir datos para el nuevo usuario y la nueva base de datos
+read -p "$(echo -e ${YELLOW}"Ingrese el nombre del nuevo usuario de MySQL: "${NC})" username
+read -s -p "$(echo -e ${YELLOW}"Ingrese la contraseña del nuevo usuario de MySQL: "${NC})" user_password
+echo ""
+read -p "$(echo -e ${YELLOW}"Ingrese el nombre de la nueva base de datos: "${NC})" dbname
+
+# Preguntar si se conectará local o remotamente
+read -p "$(echo -e ${YELLOW}"¿Se conectará de manera remota? [y/n]: "${NC})" is_remote
+
+if [[ "$is_remote" =~ ^([yY][eE][sS]|[yY])$ ]]
+then
+    read -p "$(echo -e ${YELLOW}"Ingrese la dirección IP que tendrá acceso remoto: "${NC})" remote_ip
+    mysql -u root -e "CREATE USER '${username}'@'${remote_ip}' IDENTIFIED BY '${user_password}'; GRANT ALL PRIVILEGES ON ${dbname}.* TO '${username}'@'${remote_ip}';"
+else
+    mysql -u root -e "CREATE USER '${username}'@'localhost' IDENTIFIED BY '${user_password}'; GRANT ALL PRIVILEGES ON ${dbname}.* TO '${username}'@'localhost';"
+fi
+
+mysql -u root -e "CREATE DATABASE ${dbname};"
+
+if [[ "$is_remote" =~ ^([yY][eE][sS]|[yY])$ ]]
+then
+    mysql -u root -e "GRANT ALL PRIVILEGES ON ${dbname}.* TO '${username}'@'${remote_ip}';"
+else
+    mysql -u root -e "GRANT ALL PRIVILEGES ON ${dbname}.* TO '${username}'@'localhost';"
+fi
+
+echo -e "${GREEN}¡Usuario y base de datos creados con éxito!${NC}"
